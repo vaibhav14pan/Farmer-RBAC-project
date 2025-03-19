@@ -1,0 +1,35 @@
+{% extends 'users/base.html' %}
+{% load static %}
+{% block content %}
+    <h1>{% if is_editing %}Edit{% else %}Create{% endif %} User</h1>
+
+    <!-- Display success or error messages -->
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+                <p class="message {{ message.tags }}">{{ message }}</p>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="form-container">
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <!-- Display block field only when editing -->
+            {% if is_editing %}
+                <div class="form-group">
+                    <label for="id_block">{{ form.block.label }}</label>
+                    {{ form.block }}
+                </div>
+            {% endif %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">{% if is_editing %}Update{% else %}Create{% endif %} User</button>
+                <a href="{% url 'list_users' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

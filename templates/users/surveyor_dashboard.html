@@ -1,0 +1,14 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+    <h1>Welcome, Surveyor Dashboard</h1>
+    <p>You are logged in as a <strong>Surveyor</strong>.</p>
+    <a href="{% url 'profile' %}">My Profile</a>
+    <h2>Surveyor Actions:</h2>
+    <ul>
+        <li><a href="{% url 'add_farmer' %}">Create farmer</a></li>
+        <li><a href="{% url 'list_farmers' %}">View farmer</a></li>
+    </ul>
+
+
+{% endblock %}

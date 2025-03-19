@@ -1,0 +1,39 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h1>Your Profile</h1>
+        
+        <!-- Check if the user is not a Farmer -->
+        {% if user.role != 'farmer' %}
+            <div class="row">
+                <div class="col-md-6">
+                    <h3>Profile Details</h3>
+                    <p><strong>Username:</strong> {{ user.username }}</p>
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+                    
+                    <!-- Check if the user has a block assigned -->
+                    <p><strong>Block:</strong> 
+                        {% if user.block %}
+                            {{ user.block.name }}
+                        {% else %}
+                            No block assigned
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <h3>Profile Image</h3>
+                    {% if user.image %}
+                        <img src="{{ user.image.url }}"  alt="Profile Image" class="img-fluid rounded-circle" />
+                    {% else %}
+                        <p>No profile image available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <p>You are a farmer and your profile is not visible here. Please contact the admin for more details.</p>
+        {% endif %}
+    </div>
+{% endblock %}

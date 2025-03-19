@@ -1,0 +1,13 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+    <h1>Welcome, Supervisor Dashboard</h1>
+    <p>You are logged in as a <strong>Supervisor</strong>.</p>
+    <a href="{% url 'profile' %}">My Profile</a>
+    <h2>Supervisor Actions:</h2>
+    <ul>
+        <li><a href="list-surveyors/">View surveyors</a></li>
+        <li><a href="{% url 'list_farmers' %}">View farmer</a></li>
+    </ul>
+
+{% endblock %}

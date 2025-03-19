@@ -1,0 +1,35 @@
+{% extends 'users/base.html' %}
+
+{% block content %}
+    <h1>Farmers in Your Block</h1>
+
+    <!-- Display message if no farmers are found -->
+    {% if farmers.count == 0 %}
+        <p>No farmers found in your block.</p>
+    {% else %}
+        <!-- Farmers Table -->
+        <table class="farmers-table">
+            <thead>
+                <tr>
+                    <th>Farmer Name</th>
+                    <th>Aadhar ID</th>
+                    <th>Block</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for farmer in farmers %}
+                    <tr>
+                        <td>{{ farmer.name }}</td>
+                        <td>{{ farmer.aadhar_id }}</td>
+                        <td>{{ farmer.block.name }}</td>
+                        <td>
+                            <a href="{% url 'add_or_edit_farmer' farmer.id %}">Edit</a> |
+                            <a href="{% url 'delete_farmer' farmer.id %}" onclick="return confirm('Are you sure you want to delete this farmer?')">Delete</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+{% endblock %}
