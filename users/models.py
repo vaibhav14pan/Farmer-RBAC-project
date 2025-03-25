@@ -1,5 +1,7 @@
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
+from django.core.validators import RegexValidator
+from django.conf import settings
 
 class Block(models.Model):
     name = models.CharField(max_length=100, unique=True)
@@ -25,12 +27,29 @@ class User(AbstractUser):
         return f"{self.username} - {self.role}"
 
 class Farmer(models.Model):
+    aadhar_validator = RegexValidator(
+        regex=r'^\d{12}$',  
+        message="Aadhar ID must be a 12-digit number."
+    )
+    
     name = models.CharField(max_length=100)
-    aadhar_id = models.CharField(max_length=12, unique=True)
+    aadhar_id = models.CharField(
+        max_length=12, 
+        unique=True,
+        validators=[aadhar_validator] 
+    )
     block = models.ForeignKey(Block, on_delete=models.CASCADE)
-    added_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='farmer_images/', null=True, blank=True)  # Farmer Profile Image
-    aadhar_image = models.ImageField(upload_to='aadhar_images/', null=True, blank=True)  # Aadhar Image
+    added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to='farmer_images/', null=True, blank=True)  
+    aadhar_image = models.ImageField(upload_to='aadhar_images/', null=True, blank=True)  
+    profile_pic = models.ImageField(upload_to='farmer_profiles/', null=True, blank=True)
+    aadhar_card = models.FileField(upload_to='aadhar_cards/', null=True, blank=True)
+    date_added = models.DateTimeField(auto_now_add=True)
 
-    def _str_(self):
+    def __str__(self):
         return self.name
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['aadhar_id'], name='unique_aadhar_id')
+        ]

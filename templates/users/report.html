@@ -1,0 +1,38 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Farmer Reports</h1>
+    
+    <div style="margin-bottom: 20px;">
+        <a href="{% url 'admin:users_farmer_changelist' %}" class="button">Back to Farmers</a>
+        <a href="{% url 'admin:index' %}" class="button">Admin Home</a>
+    </div>
+    
+    {% if reports %}
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Report Type</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Date</th>
+                    <th style="padding: 10px; text-align: left; border-bottom: 1px solid #ddd;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ report.name }}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">{{ report.date }}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                        <a href="{{ report.url }}" class="button" style="background-color: #417690; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px;">Download CSV</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No reports available. Generate reports using the management command:</p>
+        <pre>python manage.py generate_monthly_report</pre>
+    {% endif %}
+</div>
+{% endblock %}

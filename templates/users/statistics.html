@@ -1,0 +1,106 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}Statistics Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    {% if user.is_superuser or user.role == 'admin' %}
+        <!-- Admin Statistics View -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h2>Admin Statistics Dashboard</h2>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <h5 class="card-title">Total Farmers</h5>
+                        <h2 class="card-text">{{ total_farmers }}</h2>
+                        <p class="mb-0">Across all blocks</p>
+                    </div>
+                </div>
+            </div>
+          
+
+        <!-- Block Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Block Statistics</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Block Name</th>
+                                        <th>Total Farmers</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for block in block_stats %}
+                                    <tr>
+                                        <td>{{ block.name }}</td>
+                                        <td>{{ block.count }}</td>
+                                        <td>
+                                            {% if block.count > 0 %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Statistics -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">User Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th>Block</th>
+                                        <th>Today</th>
+                                        <th>Last 7 Days</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user_stat in user_stats %}
+                                    <tr>
+                                        <td>{{ user_stat.username }}</td>
+                                        <td>{{ user_stat.role }}</td>
+                                        <td>{{ user_stat.block }}</td>
+                                        <td>{{ user_stat.today_count }}</td>
+                                        <td>{{ user_stat.last_7_days }}</td>
+                                        <td>{{ user_stat.total_farmers }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

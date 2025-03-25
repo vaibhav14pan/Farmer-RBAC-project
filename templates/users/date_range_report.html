@@ -1,0 +1,42 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h1>Generate Custom Date Range Report</h1>
+    
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_start_date">Start Date:</label>
+            {{ form.start_date }}
+        </div>
+        <div class="form-group">
+            <label for="id_end_date">End Date:</label>
+            {{ form.end_date }}
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Report</button>
+    </form>
+    
+    {% if message %}
+    <div class="alert alert-success mt-3">
+        {{ message }}
+    </div>
+    {% endif %}
+    
+    {% if reports %}
+    <div class="mt-4">
+        <h3>Generated Reports:</h3>
+        <ul class="list-group">
+            {% for report in reports %}
+            <li class="list-group-item">
+                <a href="{% url 'download_generated_report' report_type=report.type filename=report.filename %}">
+                    {{ report.name }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

@@ -1,0 +1,54 @@
+{% extends 'users/base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h4>Welcome, {{ user.username }}</h4>
+                    <div class="text-end mb-3">
+                        <a href="{% url 'statistics' %}" class="btn btn-primary">View Statistics</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <h5>Your Statistics</h5>
+                    <div class="alert alert-info">
+                        <p><strong>Farmers added today:</strong> {{ daily_farmer_count }}</p>
+                    </div>
+                    
+                    {% if user.role == 'admin' %}
+                    <h5>Block Statistics</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Block Name</th>
+                                    <th>Farmer Count</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for block in block_counts %}
+                                <tr>
+                                    <td>{{ block.name }}</td>
+                                    <td>{{ block.count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% elif user.role == 'supervisor' and block_name %}
+                    <h5>Your Block</h5>
+                    <div class="alert alert-info">
+                        <p><strong>{{ block_name }}:</strong> {{ block_count }} farmers</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -31,5 +31,11 @@ urlpatterns = [
     path('edit-block/<int:block_id>/', views.edit_block, name='edit_block'),
     path('delete-block/<int:block_id>/', views.delete_block, name='delete_block'),
     
+    path('statistics/', views.statistics, name='statistics'),
+    
+    path('download-csv-by-user/', views.download_csv_by_user, name='download_csv_by_user'),
+    path('download-csv-by-block/', views.download_csv_by_block, name='download_csv_by_block'),
+    path('date-range-report/', views.date_range_report, name='date_range_report'),
+    path('download-report/<str:report_type>/<str:filename>/', views.download_generated_report, name='download_generated_report'),
 ]
 

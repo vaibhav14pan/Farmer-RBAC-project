@@ -4,12 +4,20 @@
     <h1>Welcome, Admin Dashboard</h1>
     <p>You are logged in as an <strong>Admin</strong>.</p>
     <a href="{% url 'profile' %}">My Profile</a>
+    <a href="{% url 'statistics' %}">Statistics</a>
     <h2>Admin Actions:</h2>
     <ul>
         <li><a href="{% url 'create_block' %}">Create Block</a></li>
         <li><a href="{% url 'list_blocks' %}">List Blocks</a></li>
         <li><a href="{% url 'create_user' %}">Create User</a></li>
         <li><a href="{% url 'list_users' %}">List Users</a></li>
+    </ul>
+    
+    <h2>Reports:</h2>
+    <ul>
+        <li><a href="{% url 'download_csv_by_user' %}">Download Farmers by User CSV (Current Month)</a></li>
+        <li><a href="{% url 'download_csv_by_block' %}">Download Farmers by Block CSV (Current Month)</a></li>
+        <li><a href="{% url 'date_range_report' %}"><strong>Generate Custom Date Range Reports</strong></a></li>
     </ul>
 
 {% endblock %}

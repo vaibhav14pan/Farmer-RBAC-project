@@ -1,11 +1,16 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, FileResponse, Http404
 from functools import wraps
 from .models import Block, User, Farmer
-from .forms import LoginForm, ProfileForm, UserForm, BlockForm, FarmerForm
+from .forms import LoginForm, ProfileForm, UserForm, BlockForm, FarmerForm, DateRangeReportForm
 import sys
+import redis
+from django.conf import settings
+import datetime
+import os
+from django.utils import timezone
 
 def role_required(roles):
     def decorator(view_func):
@@ -44,6 +49,14 @@ def logout_view(request):
     logout(request)
     return redirect('login')
 
+# Connect to Redis
+redis_client = redis.Redis(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    db=settings.REDIS_DB,
+    decode_responses=True
+)
+
 @login_required
 def dashboard(request):
     user_role = getattr(request.user, 'role', None)
@@ -57,6 +70,15 @@ def dashboard(request):
     print("dashboard: No valid role found, logging out", file=sys.stderr)
     logout(request)
     return redirect('login')
+
+@login_required
+@role_required(['admin'])
+def create_block(request):
+    form = BlockForm(request.POST or None)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect('dashboard')
+    return render(request, 'users/create_block.html', {'form': form})
 
 @login_required
 @role_required(['admin'])
@@ -286,3 +308,206 @@ def profile(request):
         return HttpResponseForbidden("You cannot view this section.")
     
     return render(request, 'users/profile.html', {'user': request.user})
+
+@login_required
+def statistics(request):
+    """
+    Statistics view showing metrics based on user role.
+    Displays Redis-based statistics about farmer counts.
+    """
+    user = request.user
+    context = {'user': user}
+    
+    if user.is_superuser or user.role == 'admin':
+        # Add admin-specific statistics
+        blocks = Block.objects.all()
+        block_stats = []
+        
+        for block in blocks:
+            block_key = f"block:{block.id}:farmers:count"
+            count = int(redis_client.get(block_key) or 0)
+            block_stats.append({
+                'name': block.name,
+                'count': count,
+                'id': block.id
+            })
+        
+        # Get all users except superusers
+        users = User.objects.exclude(is_superuser=True)
+        user_stats = []
+        
+        for u in users:
+            today = datetime.date.today().isoformat()
+            today_key = f"user:{u.id}:farmers:added:{today}"
+            today_count = int(redis_client.get(today_key) or 0)
+            
+            user_stats.append({
+                'username': u.username,
+                'role': u.role,
+                'block': u.block.name if u.block else 'Not Assigned',
+                'today_count': today_count,
+                'total_farmers': Farmer.objects.filter(added_by=u).count()
+            })
+        
+        context.update({
+            'block_stats': block_stats,
+            'user_stats': user_stats,
+            'total_farmers': Farmer.objects.count(),
+            'is_admin_view': True
+        })
+    
+    # Keep your existing surveyor logic here...
+    
+    return render(request, 'users/statistics.html', context)
+
+def get_latest_csv_file(prefix):
+    """Helper function to get the most recent CSV file with a specific prefix"""
+    reports_dir = os.path.join(settings.BASE_DIR, 'reports')
+    if not os.path.exists(reports_dir):
+        return None
+    
+    # Filter files by the prefix
+    matching_files = [f for f in os.listdir(reports_dir) if f.startswith(prefix) and f.endswith('.csv')]
+    
+    if not matching_files:
+        return None
+        
+    # Sort by modification time (newest first)
+    matching_files.sort(key=lambda f: os.path.getmtime(os.path.join(reports_dir, f)), reverse=True)
+    
+    return os.path.join(reports_dir, matching_files[0])
+
+def download_csv_by_user(request):
+    """View to download the latest farmers by user CSV"""
+    if not request.user.is_authenticated or request.user.role != 'admin':
+        raise Http404("Not found")
+        
+    file_path = get_latest_csv_file('farmers_by_user')
+    
+    if not file_path or not os.path.exists(file_path):
+        # If no file exists, generate one for current month
+        from django.core.management import call_command
+        now = timezone.now()
+        call_command('generate_monthly_report', month=now.month, year=now.year)
+        
+        # Try getting the file again
+        file_path = get_latest_csv_file('farmers_by_user')
+        if not file_path or not os.path.exists(file_path):
+            raise Http404("Report not found. Please generate reports first.")
+    
+    response = FileResponse(open(file_path, 'rb'))
+    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+    return response
+
+def download_csv_by_block(request):
+    """View to download the latest farmers by block CSV"""
+    if not request.user.is_authenticated or request.user.role != 'admin':
+        raise Http404("Not found")
+        
+    file_path = get_latest_csv_file('farmers_by_block')
+    
+    if not file_path or not os.path.exists(file_path):
+        # If no file exists, generate one for current month
+        from django.core.management import call_command
+        now = timezone.now()
+        call_command('generate_monthly_report', month=now.month, year=now.year)
+        
+        # Try getting the file again
+        file_path = get_latest_csv_file('farmers_by_block')
+        if not file_path or not os.path.exists(file_path):
+            raise Http404("Report not found. Please generate reports first.")
+    
+    response = FileResponse(open(file_path, 'rb'))
+    response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
+    return response
+
+def farmer_report(request):
+    if request.method == 'POST':
+        form = DateRangeReportForm(request.POST)
+        if form.is_valid():
+            start_date = form.cleaned_data['start_date']
+            end_date = form.cleaned_data['end_date']
+            
+            # Query using date range
+            farmers = Farmer.objects.filter(
+                created_at__gte=start_date,
+                created_at__lte=end_date
+            )
+            
+            # Process data for report...
+    else:
+        form = DateRangeReportForm()
+    
+    return render(request, 'users/farmer_report.html', {'form': form, 'data': data})
+
+@login_required
+@role_required(['admin'])
+def date_range_report(request):
+    if request.method == 'POST':
+        form = DateRangeReportForm(request.POST)
+        if form.is_valid():
+            start_date = form.cleaned_data['start_date']
+            end_date = form.cleaned_data['end_date']
+            
+            # Generate report using management command
+            from django.core.management import call_command
+            
+            # Format dates for command
+            start_date_str = start_date.strftime('%Y-%m-%d')
+            end_date_str = end_date.strftime('%Y-%m-%d')
+            
+            # Call command to generate report
+            call_command('generate_monthly_report', 
+                         start_date=start_date_str,
+                         end_date=end_date_str)
+            
+            # Get the generated report filenames
+            start_date_fmt = start_date.strftime('%Y%m%d')
+            end_date_fmt = end_date.strftime('%Y%m%d')
+            
+            # Prepare report links
+            reports = [
+                {
+                    'type': 'user',
+                    'name': 'Farmers by User Report',
+                    'filename': f"farmers_by_user_{start_date_fmt}_to_{end_date_fmt}.csv"
+                },
+                {
+                    'type': 'block',
+                    'name': 'Farmers by Block Report',
+                    'filename': f"farmers_by_block_{start_date_fmt}_to_{end_date_fmt}.csv"
+                },
+                {
+                    'type': 'farmer',
+                    'name': 'Detailed Farmer Report',
+                    'filename': f"detailed_farmers_{start_date_fmt}_to_{end_date_fmt}.csv"
+                }
+            ]
+            
+            return render(request, 'users/date_range_report.html', {
+                'form': form,
+                'message': f"Reports generated for {start_date_str} to {end_date_str}",
+                'reports': reports
+            })
+    else:
+        form = DateRangeReportForm()
+    
+    return render(request, 'users/date_range_report.html', {'form': form})
+
+
+@login_required
+@role_required(['admin'])
+def download_generated_report(request, report_type, filename):
+    """Download a specific generated report file"""
+    if not request.user.is_authenticated or request.user.role != 'admin':
+        raise Http404("Not found")
+    
+    reports_dir = os.path.join(settings.BASE_DIR, 'reports')
+    file_path = os.path.join(reports_dir, filename)
+    
+    if not os.path.exists(file_path):
+        raise Http404(f"Report file not found. Please generate the report first.")
+    
+    response = FileResponse(open(file_path, 'rb'))
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

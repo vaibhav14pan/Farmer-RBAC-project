@@ -25,8 +25,24 @@ class FarmerForm(forms.ModelForm):
 
     class Meta:
         model = Farmer
-        fields = ['name', 'aadhar_id', 'image', 'aadhar_image'] 
+        fields = ['name', 'aadhar_id', 'block', 'profile_pic', 'aadhar_card']
 
+    def clean_aadhar_id(self):
+        aadhar_id = self.cleaned_data.get('aadhar_id')
+        
+        # Check if this is an update
+        instance = getattr(self, 'instance', None)
+        if instance and instance.pk:
+            # If this is an update, exclude the current instance from the check
+            exists = Farmer.objects.filter(aadhar_id=aadhar_id).exclude(pk=instance.pk).exists()
+        else:
+            # For new farmers, check if aadhar_id already exists
+            exists = Farmer.objects.filter(aadhar_id=aadhar_id).exists()
+            
+        if exists:
+            raise forms.ValidationError("A farmer with this Aadhar ID already exists.")
+            
+        return aadhar_id
 
 class ProfileForm(forms.ModelForm):
     password = forms.CharField(widget=forms.PasswordInput(), required=False, label='New Password')
@@ -38,3 +54,7 @@ class ProfileForm(forms.ModelForm):
             'role': forms.TextInput(attrs={'readonly': 'readonly'}),
             'block': forms.TextInput(attrs={'readonly': 'readonly'}),
         }
+
+class DateRangeReportForm(forms.Form):
+    start_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    end_date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
